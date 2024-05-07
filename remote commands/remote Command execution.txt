@@ -1,0 +1,142 @@
+###### First we change the hostname of Every machine #####
+
+######################## for scriptbox machine
+
+$ vagrant ssh scriptbox
+
+[vagrant@scriptbox ~]$ sudo -i
+[root@scriptbox ~]# vi /etc/hostname
+[root@scriptbox ~]# hostname scriptbox
+
+
+############################ for web01 machine
+
+$ vagrant ssh web01
+
+[vagrant@web01 ~]$ sudo -i
+[root@web01 ~]# vi /etc/hostname
+[root@web01 ~]# hostname web01
+
+
+############################# for web02 machine
+
+$ vagrant ssh web02
+
+[vagrant@web02 ~]$ sudo -i
+[root@web02 ~]# vi /etc/hostname
+[root@web02 ~]# hostname web02
+
+
+############################# for web03 machine
+
+$ vagrant ssh web03
+
+vagrant@web03:~$ sudo -i
+root@web03:~# vi /etc/hostname
+root@web03:~# hostname web03
+
+####### Add name to ip mapping in the scriptbox machine, so we can refer to all machines by their names not ip ##########
+
+$ vagrant ssh scriptbox
+
+[vagrant@scriptbox ~]$ sudo -i
+[root@scriptbox ~]# vim /etc/hosts
+[root@scriptbox ~]# cat /etc/hosts
+			192.168.10.13 web01
+                        192.168.10.14 web02
+                        192.168.10.15 web03
+
+########## Adding user devops by ssh from scriptbox to web01 web02 web03 ################
+
+[root@scriptbox ~]# ssh vagrant@web01
+[vagrant@web01 ~]$ sudo -i
+[root@web01 ~]# useradd devops
+[root@web01 ~]# passwd devops
+   ### adding devops user to sudoers file ###
+   
+   [root@web01 ~]# visudo
+
+   ## Allow root to run any commands anywhere
+   root    ALL=(ALL)       ALL
+   devops  ALL=(ALL)       NOPASSWD: ALL
+
+#####################################################################################
+
+
+[root@scriptbox ~]# ssh vagrant@web02
+[vagrant@web02 ~]$ sudo -i
+[root@web02 ~]# useradd devops
+[root@web02 ~]# passwd devops
+   ### adding devops user to sudoers file ###
+   
+   [root@web02 ~]# visudo
+
+   ## Allow root to run any commands anywhere
+   root    ALL=(ALL)       ALL
+   devops  ALL=(ALL)       NOPASSWD: ALL
+
+#####################################################################################
+
+### Ubuntu machine doesnt allow password login for that we have to login inside machine and change authentecation ###
+
+$ vagrant ssh web03
+
+vagrant@web03:~$ sudo -i
+root@web03:~# vim /etc/ssh/sshd_config
+          # To disable tunneled clear text passwords, change to no here!
+           PasswordAuthentication yes
+root@web03:~# systemctl restart ssh
+       #####################################################
+
+[root@scriptbox ~]# ssh vagrant@web03
+[vagrant@web03 ~]$ sudo -i
+[root@web03 ~]# adduser devops
+
+   ### adding devops user to sudoers file ###
+   
+   [root@web03 ~]# visudo
+
+   # User privilege specification
+   root    ALL=(ALL:ALL) ALL
+   devops  ALL=(ALL:ALL) NOPASSWD: ALL
+
+
+
+########################## login by key auth "key-pair" instead of password ############################
+
+$ vagrant ssh scriptbox
+
+[vagrant@scriptbox ~]$ sudo -i
+[root@scriptbox ~]# ssh-keygen
+
+ ### copy the pub key to remote machine web01 web02 web03 ####
+
+ 
+[root@scriptbox ~]# ssh-copy-id devops@web01
+[root@scriptbox ~]# ssh-copy-id devops@web02
+[root@scriptbox ~]# ssh-copy-id devops@web03
+
+################ Now some bash Scripting for installing "httpd apache2 yum apt" to remote machines ######################
+
+[root@scriptbox ~]# mkdir /opt/scripts
+[root@scriptbox ~]# cd /opt/scripts
+[root@scriptbox scripts]# vim remhosts   #found in repo#
+[root@scriptbox scripts]# for host in `cat remhosts`; do ssh devops@$host sudo yum install git -y;done    #looping#
+
+### Enable yum httpd apt apache2 on centOS and Ubuntu ###
+
+[root@scriptbox scripts]# vim multios-websetup.sh    #found in repo#
+[root@scriptbox scripts]# chmod +x multios-websetup.sh
+[root@scriptbox scripts]# ./multios-websetup.sh
+
+### executing Script on all servers ###
+
+[root@scriptbox scripts]# vim webdeploy.sh   #found in repo#
+[root@scriptbox scripts]# chmod +x webdeploy.sh
+[root@scriptbox scripts]# ./webdeploy.sh
+
+############## For listing the ip addresses of webpages for the servers ########
+
+[root@scriptbox scripts]# cat /etc/hosts
+
+   #############################################################################################################################
